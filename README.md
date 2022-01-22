@@ -16,14 +16,14 @@
 
 ## 2 复现精度
 >#### 在Open Entity数据集的测试效果如下表。
->在open entity数据集上我们成功达到论文精度，比原论文高出0.3%(所有超参与原论文代码一致)
+>在open entity数据集上我们成功达到论文精度，最高精度比原论文高出0.3%(所有超参与原论文代码一致)
 
 |网络 |opt|batch_size|数据集|F1|F1(原论文)|
 | :---: | :---: | :---: | :---: | :---: | :---: |
 |Luke-large|AdamW|2|Open Entity|78.54|78.2|
 
 >复现代码训练日志：
-[复现代码训练日志](open_entity_train.log)
+[复现代码训练日志](open_entity/train.log)
 >
 >#### 在SQuAD1.1数据集的测试效果如下表。
 >由于SQuAD1.1数据集比较特殊，不提供测试集，因此对比验证集的结果
@@ -72,9 +72,9 @@ python main.py --data_dir=<DATA_DIR> --pretrain_model=<MODEL> --output_dir=<OUTP
 运行结束后你将看到如下结果:
 ```bash
 Results: %s {
-  "test_f1": 0.7750939345142244,
-  "test_precision": 0.7925356750823271,
-  "test_recall": 0.7584033613445378
+  "test_f1": 0.7815726767275616,
+  "test_precision": 0.7880405766150561,
+  "test_recall": 0.7752100840336135
 }
 ```
 
