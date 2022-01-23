@@ -177,7 +177,7 @@ def evaluate(args, model, prefix=""):
             end_logits = end_logits.tolist()
             all_results.append(RawResult(unique_id, start_logits, end_logits))
     all_predictions = write_predictions(args, examples, features, all_results, 20, 30, False)
-    SQuad_postprocess(os.path.join(args.data_dir + 'data/', processor.dev_file), all_predictions, output_metrics="output.json")
+    SQuad_postprocess(os.path.join(current_dir + '/squad_data/data/', processor.dev_file), all_predictions, output_metrics="output.json")
 
 
 def load_examples(args, evaluate=False):
