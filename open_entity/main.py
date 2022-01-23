@@ -16,7 +16,6 @@
 import json
 import logging
 import os
-from transformers import RobertaTokenizer
 import argparse
 
 import paddle
@@ -28,19 +27,19 @@ from trainer import Trainer
 from open_entity import LukeForEntityTyping
 from utils import ENTITY_TOKEN, convert_examples_to_features, DatasetProcessor
 from datagenerator import DataGenerator
-from word_tokenizer import AutoTokenizer
 import pickle
 import numpy as np
 import random
+from luke_tokenizer import LukeTokenizer
 
 
 logger = logging.getLogger(__name__)
 
 parser = argparse.ArgumentParser(description="")
-parser.add_argument("--checkpoint_file", type=str, default='luke.pt')
-parser.add_argument("--data_dir", type=str, default='data/')
-parser.add_argument("--do_eval", type=bool, default=True)
-parser.add_argument("--do_train", type=bool, default=True)
+parser.add_argument("--checkpoint_file", type=str, required=True)
+parser.add_argument("--data_dir", type=str, required=True)
+parser.add_argument("--do_eval", type=str, default='')
+parser.add_argument("--do_train", type=str, default='')
 parser.add_argument("--eval_batch_size", type=int, default=32)
 parser.add_argument("--num_train_epochs", type=int, default=3)
 parser.add_argument("--seed", type=int, default=12)
@@ -48,13 +47,12 @@ parser.add_argument("--train_batch_size", type=int, default=2)
 parser.add_argument("--entity_vocab_size", default=500000)
 parser.add_argument("--vocab_size", default=50265)
 parser.add_argument("--entity_emb_size", default=256)
-parser.add_argument("--pretrain_model", default='/home/aistudio/data/data123707/paddle_luke.pt')
-parser.add_argument("--output_dir", default="output/")
+parser.add_argument("--pretrain_model", type=str, required=True)
+parser.add_argument("--output_dir", default="", required=True)
 parser.add_argument("--max_answer_length", default=30)
 parser.add_argument("--max_entity_length", default=128)
 parser.add_argument("--max_query_length", default=64)
 parser.add_argument("--max_seq_length", default=512)
-parser.add_argument("--tokenizer", default=None)
 parser.add_argument("--device", type=str, default="gpu")
 parser.add_argument("--max_mention_length", default=30)
 parser.add_argument("--gradient_accumulation_steps", default=2)
@@ -65,11 +63,9 @@ parser.add_argument("--adam_b2", type=float, default=0.98)
 parser.add_argument("--weight_decay", type=float, default=0.01)
 args = parser.parse_args()
 
-abs_path = os.path.abspath(__file__)
-abs_path_dir = '/'.join(abs_path.split('/')[:-1])
-
-args.entity_vocab = EntityVocab(abs_path_dir + 'entity_vocab.tsv')
-args.tokenizer = RobertaTokenizer(abs_path_dir + '/data/vocab.json', abs_path_dir + '/data/merges.txt')
+current_dir = os.path.dirname(os.path.abspath(__file__))
+args.entity_vocab = EntityVocab(current_dir + '/data/entity_vocab.tsv')
+args.tokenizer = LukeTokenizer(current_dir + '/data/vocab.json', current_dir + '/data/merges.txt')
 
 def change_state_dict(state_dict, config):
     not_transpose_list = ['embeddings.word_embeddings.weight',
@@ -149,7 +145,6 @@ def run(args):
         del args.model_weights
 
         def step_callback(model, global_step, max_f1, output_dir):
-            """训练时开启验证"""
             if (global_step + 1) % num_train_steps_per_epoch == 0:
                 dev_results = evaluate(args, model, fold="dev")
                 if max_f1 < dev_results['f1']:
@@ -184,14 +179,13 @@ def run(args):
 
 
 def evaluate(args, model, fold="dev", output_file=None):
-    """评估模型 模型评估代码来自官方提供"""
     dataloader, _, _, label_list = load_examples(args, fold=fold)
     model.eval()
 
     all_logits = []
     all_labels = []
 
-    for batch in tqdm(dataloader, desc=fold):  
+    for batch in tqdm(dataloader, desc=fold):
         with paddle.no_grad():
             logits = model( word_ids=batch[0],
                             word_segment_ids=batch[1],
@@ -211,7 +205,7 @@ def evaluate(args, model, fold="dev", output_file=None):
     all_predicted_indexes = []
     all_label_indexes = []
     for logits, labels in zip(all_logits, all_labels):
-        all_predicted_indexes.append([i for i, v in enumerate(logits) if v > -0.15])  # 决策边界设为-0.15
+        all_predicted_indexes.append([i for i, v in enumerate(logits) if v > 0])
         all_label_indexes.append([i for i, v in enumerate(labels) if v > 0])
 
     if output_file:
@@ -246,7 +240,6 @@ def evaluate(args, model, fold="dev", output_file=None):
     return dict(precision=precision, recall=recall, f1=f1)
 
 
-
 def load_examples(args, fold="train"):
 
     processor = DatasetProcessor()
@@ -260,9 +253,11 @@ def load_examples(args, fold="train"):
     label_list = processor.get_label_list(args.data_dir)
 
     logger.info("Creating features from the dataset...")
-
-    features = convert_examples_to_features(examples, label_list, args.tokenizer, args.max_mention_length)
-
+    if not os.path.exists(args.data_dir + "/" + fold + "/luke.pt"):
+        features = convert_examples_to_features(examples, label_list, args.tokenizer, args.max_mention_length)
+    else:
+        with open(args.data_dir + "/" + fold + "/luke.pt", 'rb') as f:
+            features = pickle.load(f)
 
     data_generator = DataGenerator(features, args)
     def collate_fn(batch):

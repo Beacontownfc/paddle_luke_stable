@@ -17,7 +17,6 @@ import json
 import os
 
 from tqdm import tqdm
-from transformers import RobertaTokenizer
 
 ENTITY_TOKEN = "[ENTITY]"
 

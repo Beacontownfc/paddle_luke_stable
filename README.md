@@ -7,6 +7,8 @@
 - 在open entity数据集上成功达到论文精度
 - 更稳定的运行结果
 - 在SQuAD1.1数据集上我们提供多卡运行版本
+- LukeTokenizer我们重新进行复现，无需依赖transformers库
+- 我们提供aistudio notebook, 帮助您快速验证模型
 
 **项目参考：**
 - [https://github.com/studio-ousia/luke](https://github.com/studio-ousia/luke)
@@ -32,10 +34,10 @@
 
 |网络 |opt|batch_size|数据集|F1|F1(原论文)|EM|EM(原论文)
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |:---: |
-|Luke-large|AdamW|8|SQuAD1.1|94.95|95.0|89.76|89.8
+|Luke-large|AdamW|8|SQuAD1.1|94.95|95.0|89.73|89.8
 
 >复现代码及训练日志：
-[复现代码训练日志](squad_train.log)
+[复现代码训练日志](reading_comprehension/train.log)
 >
 ## 3 数据集
 下载Open Entity数据集
@@ -55,17 +57,30 @@ pip install -r requirements.txt
 ```
 
 ## 5 快速开始
+如果你觉得以下步骤过于繁琐，您可以直接到此处
+[链接](https://aistudio.baidu.com/aistudio/projectdetail/3393133)
+快速验证open entity数据集上的结果，以及此处
+[链接](https://aistudio.baidu.com/aistudio/projectdetail/3438351)
+快速验证SQuAD1.1数据集上的结果，以上均在AIStudio Notebook上运行。
 #### 数据集下载好后，同时下载预训练权重: [下载地址](https://aistudio.baidu.com/aistudio/datasetdetail/123707)
 
 ###### 训练并测试在open entity数据集上的F1：
 ###### 进入到`./open_entity`文件夹下, 运行下列命令
+
+
 ```bash
-python main.py --data_dir=<DATA_DIR> --pretrain_model=<MODEL> --output_dir=<OUTPUT_DIR> 2>&1 | tee train.log
+python main.py --do_train=1 --data_dir=<DATA_DIR> --output_dir=<OUTPUT_DIR> --checkpoint_file=<NAME> --pretrain_model=<MODEL>
+```
+
+评估训练好的模型:
+
+```bash
+python main.py --do_eval=1 --data_dir=<DATA_DIR> --output_dir=<OUTPUT_DIR> --checkpoint_file=<NAME> --pretrain_model=<MODEL>
 ```
 
 说明：
 
-- `<DATA_DIR>`、`<MODEL>`和`<OUTPUT_DIR>`分别为数据集文件夹路径、预训练权重路径和输出文件夹路径
+- `<DATA_DIR>`、`<MODEL>`和`<OUTPUT_DIR>`分别为数据集文件夹路径、预训练权重路径和输出文件夹路径, `<NAME>为你自定checkpoint名字`
 
 - 若想要得到论文精度，需要多运行几次，运行一次在v100 16GB上大概15分钟
 
@@ -83,27 +98,32 @@ Results: %s {
 
 首先预处理数据集：
 ```bash
-python create_squad_data.py --wiki_data=<WIKI_DATA_DIR>
+python create_squad_data.py --wiki_data=<WIKI_DATA_DIR> --data_dir=<DATA_DIR1> --output_data_dir=<DATA_DIR2>
 ```
-运行结束后你将看到预处理好数据的json和pickle文件：`train.json`、`eval_data.json`和`eval_obj.pickle`
+运行结束后你将看到预处理好数据的json和pickle文件：`train.json`、`eval_data.json`和`eval_obj.pickle`，存放在`<DATA_DIR2>`路径下
 
 ```bash
-python -m paddle.distributed.launch main.py --data_dir=<DATA_DIR> --pretrain_model=<MODEL> --output_dir=<OUTPUT_DIR> 2>&1 | tee train.log
+python -m paddle.distributed.launch main.py --data_dir=<DATA_DIR2> --pretrain_model=<MODEL> --output_dir=<OUTPUT_DIR> --multi_cards=1 --do_train=1
 ```
 
 以上为多卡训练，使用单卡训练如下:
 ```bash
-python main.py --data_dir=<DATA_DIR> --pretrain_model=<MODEL> --output_dir=<OUTPUT_DIR> 2>&1 | tee train.log
+python main.py --do_train=1 --data_dir=<DATA_DIR2> --checkpoint_file=<NAME> --output_dir=<OUTPUT_DIR> --pretrain_model=<MODEL>
 ```
 说明： 
 
-- `<WIKI_DATA_DIR>`为LUKE官方提供的维基百科(实体)数据集文件夹路径, `<DATA_DIR>`为运行上一条命令得到的预处理数据集文件夹路径
+- `<WIKI_DATA_DIR>`为LUKE官方提供的维基百科(实体)数据集文件夹路径, `<DATA_DIR1>`为SQuAD1.1数据集路径, `<DATA_DIR2>`解释如上，`<NAME>`是你自定checkpoint名字, `<MODEL>`是预训练权重路径
 
 - 若想要得到论文精度，需要多运行几次，运行一次在四张v100 32GB上大概75分钟
 
+评估训练好的模型:
+```bash
+python main.py --do_eval=1 --data_dir=<DATA_DIR1> --checkpoint_file=<NAME> --output_dir=<OUTPUT_DIR>
+```
+
 运行结束后你将看到如下结果:
 ```bash
-{"exact_match": 89.75691579943235, "f1": 94.95702001984502}
+{"exact_match": 89.73509933774834, "f1": 94.95971612635493}
 ```
 
 
@@ -111,7 +131,6 @@ python main.py --data_dir=<DATA_DIR> --pretrain_model=<MODEL> --output_dir=<OUTP
 ## 6 代码结构与详细说明
 ```
 ├─open_entity
-| ├─paddle_luke.pt           #预训练权重
 | ├─data                     # 数据集文件夹
 | | ├─merges.txt             #tokenizer 文件
 | | ├─entity_vocab.tsv       #实体词文件
@@ -124,10 +143,9 @@ python main.py --data_dir=<DATA_DIR> --pretrain_model=<MODEL> --output_dir=<OUTP
 | ├─datagenerator.py         #数据生成器文件
 | ├─main.py                  #运行训练并测试
 | ├─open_entity.py           #LUKE下游任务
-| ├─trainer.py               #训练
+| ├─trainer.py               #训练文件
 | ├─utils.py                   
-├─reading_comprehension
-| ├─paddle_luke.pt           
+├─reading_comprehension        
 | ├─luke_model
 | | ├─utils
 | | ├─model.py
