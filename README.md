@@ -61,9 +61,11 @@ pip install -r requirements.txt
 [链接](https://aistudio.baidu.com/aistudio/projectdetail/3393133)
 快速验证open entity数据集上的结果，以及此处
 [链接](https://aistudio.baidu.com/aistudio/projectdetail/3438351)
-快速验证SQuAD1.1数据集上的结果，以上均在AIStudio Notebook上运行。
+快速验证SQuAD1.1数据集上的结果，以上均在AIStudio Notebook上运行, 若希望使用四卡训练，请点击[此处链接](https://aistudio.baidu.com/aistudio/clusterprojectdetail/3434939)
 #### 数据集下载好后，同时下载预训练权重: [下载地址](https://aistudio.baidu.com/aistudio/datasetdetail/123707)
 
+模型的checkpoint下载地址:[链接](https://aistudio.baidu.com/aistudio/datasetdetail/126114)
+,其中`paddle_luke_openEntity.pt`是open entity上训练好的checkpoint, `paddle_luke_squad.pt`是SQuAD1.1数据集上训练好的checkpoint。
 ###### 训练并测试在open entity数据集上的F1：
 ###### 进入到`./open_entity`文件夹下, 运行下列命令
 
