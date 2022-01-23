@@ -1,0 +1,3 @@
+wikipedia2vec==1.0.5
+regex
+ujson
