@@ -62,6 +62,7 @@ pip install -r requirements.txt
 快速验证open entity数据集上的结果，以及此处
 [链接](https://aistudio.baidu.com/aistudio/projectdetail/3438351)
 快速验证SQuAD1.1数据集上的结果，以上均在AIStudio Notebook上运行, 若希望使用四卡训练，请点击[此处链接](https://aistudio.baidu.com/aistudio/clusterprojectdetail/3434939)
+进入编辑项目后，点击提交按钮即可快速使用四卡训练并评估模型。
 #### 数据集下载好后，同时下载预训练权重: [下载地址](https://aistudio.baidu.com/aistudio/datasetdetail/123707)
 
 模型的checkpoint下载地址:[链接](https://aistudio.baidu.com/aistudio/datasetdetail/126114)
