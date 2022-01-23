@@ -140,6 +140,7 @@ python main.py --do_eval=1 --data_dir=<DATA_DIR1> --checkpoint_file=<NAME> --out
 | | ├─entity_vocab.py
 | | ├─interwiki_db.py
 | | ├─model.py   
+| ├─luke_tokenizer.py        #LUKE的Tokenizer
 | ├─datagenerator.py         #数据生成器文件
 | ├─main.py                  #运行训练并测试
 | ├─open_entity.py           #LUKE下游任务
